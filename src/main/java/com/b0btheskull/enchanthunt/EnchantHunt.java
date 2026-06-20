@@ -7,6 +7,8 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -55,6 +57,19 @@ public class EnchantHunt implements ClientModInitializer {
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
+
+        // Vanilla keybinds (consumeClick) only fire when NO screen is open — but this tool is
+        // used INSIDE the villager trade screen. So also listen for the key within the merchant
+        // screen via Fabric's screen keyboard events.
+        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            if (screen instanceof MerchantScreen) {
+                ScreenKeyboardEvents.afterKeyPress(screen).register((scr, keyEvent) -> {
+                    if (toggleKey.matches(keyEvent)) {
+                        toggleActive(client);
+                    }
+                });
+            }
+        });
     }
 
     private void onClientTick(Minecraft mc) {
